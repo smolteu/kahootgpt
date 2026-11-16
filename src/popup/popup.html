@@ -71,6 +71,7 @@
 
         <div class="config" id="config">
             <button id="kgpt-config-button" class="kgpt-config-button config-button">KahootGPT</button>
+            <button id="mistral-config-button" class="mistral-config-button config-button">Mistral</button>
             <button id="openai-config-button" class="openai-config-button config-button">OpenAI</button>
 
             <div id="kgpt-config" class="kgpt-config config-area">
@@ -127,6 +128,32 @@
                     <select name="models" id="models" class="models">
                         <option class="options" value="gpt3.5">gpt-3.5-turbo</option>
                         <option class="options" value="gpt3">text-davinci-003</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="mistral-config" class="mistral-config config-area">
+                <div class="mistral" id="mistral">
+                    <div class="apikey" id="mistralapikey">
+                        <h3>
+                            Mistral API Key:
+                        </h3>
+                        <input class="mistralkeyinput" id="mistralkeyinput" placeholder="Mistral API Key" type="password">
+                    </div>
+                </div>
+                <div class="model" id="mistralmodel">
+                    <h3>Mistral Model:</h3>
+                    <select name="mistralmodels" id="mistralmodels" class="models">
+                        <option class="options" value="mistral-small">mistral-small-latest</option>
+                        <option class="options" value="mistral-medium">mistral-medium-latest</option>
+                        <option class="options" value="mistral-large">mistral-large-latest</option>
+                    </select>
+                </div>
+                <div class="model" id="provider">
+                    <h3>API Provider:</h3>
+                    <select name="providerselect" id="providerselect" class="models">
+                        <option class="options" value="openai">OpenAI</option>
+                        <option class="options" value="mistral">Mistral</option>
                     </select>
                 </div>
             </div>

@@ -31,10 +31,16 @@ var kahootgpt = (function () {
                 var val2 = request.hl || {};
                 var val3 = request.im || {};
                 var val4 = request.md || {};
+                var val5 = request.mkey || {};
+                var val6 = request.mmd || {};
+                var val7 = request.pv || {};
                 setAPIKey(val1);
                 setHighlight(val2);
                 setImport(val3);
                 setModel(val4);
+                setMistralAPIKey(val5);
+                setMistralModel(val6);
+                setProvider(val7);
 
                 sendResponse({ value: "initialized", success: true });
                 break;
@@ -49,10 +55,16 @@ var kahootgpt = (function () {
                 var val2 = request.hl || {};
                 var val3 = request.im || {};
                 var val4 = request.md || {};
+                var val5 = request.mkey || {};
+                var val6 = request.mmd || {};
+                var val7 = request.pv || {};
                 setAPIKey(val1);
                 setHighlight(val2);
                 setImport(val3);
                 setModel(val4);
+                setMistralAPIKey(val5);
+                setMistralModel(val6);
+                setProvider(val7);
 
                 createAlert("<strong>KahootGPT Settings!</strong> All settings updated <u><i>.", "#46a8f5");
 
@@ -76,6 +88,18 @@ var kahootgpt = (function () {
                 break;
             case "setapikey":
                 setAPIKey(val);
+                sendResponse({ value: toggled.toString(), success: true });
+                break;
+            case "setmistralkey":
+                setMistralAPIKey(val);
+                sendResponse({ value: toggled.toString(), success: true });
+                break;
+            case "setmistralmodel":
+                setMistralModel(val);
+                sendResponse({ value: toggled.toString(), success: true });
+                break;
+            case "setprovider":
+                setProvider(val);
                 sendResponse({ value: toggled.toString(), success: true });
                 break;
             case "sethighlight":
@@ -194,6 +218,21 @@ var kahootgpt = (function () {
         console.log("OpenAI Key: [Redacted]");
         openAIKey = val.toString();
         createAlert("<strong>KahootGPT Settings!</strong> Your OpenAI key has been updated.", "#46a8f5");
+    }
+    function setMistralAPIKey(val) {
+        console.log("Mistral Key: [Redacted]");
+        mistralKey = val.toString();
+        createAlert("<strong>KahootGPT Settings!</strong> Your Mistral key has been updated.", "#46a8f5");
+    }
+    function setMistralModel(val) {
+        console.log("Mistral Model: " + val.toString());
+        mistralModel = val.toString();
+        createAlert("<strong>KahootGPT Settings!</strong> Mistral model set to <u><i>" + val.toString() + "</i></u>.", "#46a8f5");
+    }
+    function setProvider(val) {
+        console.log("Provider: " + val.toString());
+        provider = val.toString();
+        createAlert("<strong>KahootGPT Settings!</strong> API provider set to <u><i>" + val.toString() + "</i></u>.", "#46a8f5");
     }
     function setHighlight(val) {
         console.log("Highlight: " + val.toString());
@@ -749,6 +788,9 @@ kgpt-alert-${id} {
     var minikgpttoggled = false;
 
     var openAIKey;
+    var mistralKey;
+    var mistralModel = "mistral-small-latest";
+    var provider = "openai";
     var autoHighlight = false;
     var autoImport = false;
     var model = "gpt-3.5-turbo";
@@ -802,7 +844,49 @@ kgpt-alert-${id} {
     }
 
     async function getAnswerOnly(query) {
-        if (model === "text-davinci-003") {
+        if (provider === "mistral") {
+            console.log("Calling Mistral")
+            var url = "https://api.mistral.ai/v1/chat/completions";
+            var bearer = 'Bearer ' + mistralKey;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': bearer,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "model": mistralModel,
+                    "messages": [
+                        { "role": "system", "content": 'Act as a professional; only respond with 4 concise answers (if there is a definite answer, only reply with one) in json format with "one", "two", "three", "four" or "one" as the key if only one answer to the following question, be concise:' },
+                        { "role": "user", "content": query }
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 256,
+                    "top_p": 1
+                })
+            }).then(response => response.json())
+                .then(data => {
+                    console.log(data.choices[0].message.content);
+
+                    var replyLines = data.choices[0].message.content;
+
+                    var GPTReply = JSON.parse(replyLines);
+
+                    var one = GPTReply.one || GPTReply.answer || "";
+                    var two = GPTReply.two || "";
+                    var three = GPTReply.three || "";
+                    var four = GPTReply.four || "";
+
+                    triangle.value = one;
+                    rhombus.value = two;
+                    circle.value = three;
+                    square.value = four;
+                })
+                .catch(err => {
+                    console.log("Mistral error: " + err.message.toString());
+                    error(err.message.toString(), "Mistral");
+                });
+        } else if (model === "text-davinci-003") {
             console.log("Calling GPT3")
             var url = "https://api.openai.com/v1/completions";
             var bearer = 'Bearer ' + openAIKey;
@@ -891,7 +975,65 @@ kgpt-alert-${id} {
     }
 
     async function getAnswerWithAnswer(query, triangle, rhombus, circle, square) {
-        if (model === "text-davinci-003") {
+        if (provider === "mistral") {
+            console.log("Calling Mistral")
+            var url = "https://api.mistral.ai/v1/chat/completions";
+            var bearer = 'Bearer ' + mistralKey;
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Authorization': bearer,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    "model": mistralModel,
+                    "messages": [
+                        { "role": "system", "content": 'Act as a professional;  the question will be after "question: " and there are 4 possible answers "a", "b", "c", or "d", reply with a SINGLE letter ONLY, be concise:' },
+                        { "role": "user", "content": 'question: ' + query + "\n" + "a: " + triangle + "\n" + "b: " + rhombus + "\n" + "c: " + circle + "\n" + "d: " + square }
+                    ],
+                    "temperature": 0.7,
+                    "max_tokens": 256,
+                    "top_p": 1
+                })
+            }).then(response => response.json())
+                .then(data => {
+                    console.log(data.choices[0].message.content);
+
+                    var replyLines = data.choices[0].message.content;
+
+                    var GPTReply = replyLines.replace(/\s/g, '').toLowerCase().charAt(0);
+
+                    console.log(GPTReply);
+
+                    var ans = "a";
+
+                    if (GPTReply.includes("b")) {
+                        ans = "b";
+                        rhombus_cont.style.border = "4px solid gold";
+                    } else if (GPTReply.includes("c")) {
+                        ans = "c";
+                        circle_cont.style.border = "4px solid gold";
+                    } else if (GPTReply.includes("d")) {
+                        ans = "d";
+                        square_cont.style.border = "4px solid gold";
+                    } else {
+                        ans = "a";
+                        triangle_cont.style.border = "4px solid gold";
+                    }
+
+                    tap(ans);
+                    console.log("Send tap");
+
+                    if (autoHighlight) {
+                        highlight(ans);
+                        console.log("Send highlight");
+                    }
+                })
+                .catch(err => {
+                    console.log("Mistral Error: " + err.message.toString());
+                    error(err.message.toString(), "Mistral");
+                });
+        } else if (model === "text-davinci-003") {
             console.log("Calling GPT3")
             var url = "https://api.openai.com/v1/completions";
             var bearer = 'Bearer ' + openAIKey;

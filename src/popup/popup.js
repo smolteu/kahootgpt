@@ -19,6 +19,13 @@ const kgptconfig = document.getElementById("kgpt-config");
 const openaiconfigbutton = document.getElementById("openai-config-button");
 const openaiconfig = document.getElementById("openai-config");
 
+const mistralconfigbutton = document.getElementById("mistral-config-button");
+const mistralconfig = document.getElementById("mistral-config");
+
+const mistralkeyinput = document.getElementById("mistralkeyinput");
+const mistralmodels = document.getElementById("mistralmodels");
+const providerselect = document.getElementById("providerselect");
+
 
 const openaikeyinput = document.getElementById("openaikeyinput");
 const storekey = document.getElementById("storekey");
@@ -46,6 +53,9 @@ var attached = false;
 
 var paid = false;
 var openAIKey;
+var mistralKey;
+var mistralModel = "mistral-small-latest";
+var provider = "openai";
 var autoHighlight = false;
 var autoImport = false;
 var model = "gpt-3.5-turbo";
@@ -69,6 +79,9 @@ async function callKahootGPT(tab) {
         chrome.tabs.sendMessage(id, {
             type: "initialize", value: paid.toString(),
             key: openAIKey,
+            mkey: mistralKey,
+            pv: provider,
+            mmd: mistralModel,
             hl: autoHighlight.toString(),
             im: autoImport.toString(),
             md: model.toString()
@@ -153,6 +166,48 @@ function getAPIKey() {
         console.log("Key queried");
         openAIKey = result.key || openAIKey;
         logVerb("API key retrieved");
+    });
+}
+
+function setMistralAPIKey(value) {
+    chrome.storage.local.set({ mistralkey: value }, function () {
+        mistralKey = value;
+        logVerb("Mistral API key set");
+    });
+}
+
+function getMistralAPIKey() {
+    chrome.storage.local.get(["mistralkey"], function (result) {
+        mistralKey = result.mistralkey || mistralKey;
+        logVerb("Mistral API key retrieved");
+    });
+}
+
+function setMistralModel(value) {
+    chrome.storage.local.set({ mistralmodel: value }, function () {
+        mistralModel = value;
+        logVerb("Mistral model set");
+    });
+}
+
+function getMistralModel() {
+    chrome.storage.local.get(["mistralmodel"], function (result) {
+        mistralModel = result.mistralmodel || mistralModel;
+        logVerb("Mistral model retrieved");
+    });
+}
+
+function setProvider(value) {
+    chrome.storage.local.set({ provider: value }, function () {
+        provider = value;
+        logVerb("Provider set");
+    });
+}
+
+function getProvider() {
+    chrome.storage.local.get(["provider"], function (result) {
+        provider = result.provider || provider;
+        logVerb("Provider retrieved");
     });
 }
 
@@ -243,20 +298,35 @@ const sleep = (milliseconds) => {
 
 kgptconfigbutton.addEventListener("click", function () {
     kgptconfig.style.display = "block";
+    mistralconfig.style.transform = "translateX(500px)";
     openaiconfig.style.transform = "translateX(500px)";
     kgptconfig.style.transform = "translateX(0px)";
 
     kgptconfigbutton.style.background = "linear-gradient(#525252, #52525200)";
+    mistralconfigbutton.style.background = "transparent";
+    openaiconfigbutton.style.background = "transparent";
+});
+
+mistralconfigbutton.addEventListener("click", function () {
+    mistralconfig.style.display = "block";
+    kgptconfig.style.transform = "translateX(-500px)";
+    openaiconfig.style.transform = "translateX(500px)";
+    mistralconfig.style.transform = "translateX(0px)";
+
+    mistralconfigbutton.style.background = "linear-gradient(#525252, #52525200)";
+    kgptconfigbutton.style.background = "transparent";
     openaiconfigbutton.style.background = "transparent";
 });
 
 openaiconfigbutton.addEventListener("click", function () {
     openaiconfig.style.display = "block";
     kgptconfig.style.transform = "translateX(-500px)";
+    mistralconfig.style.transform = "translateX(-500px)";
     openaiconfig.style.transform = "translateX(0px)";
 
     openaiconfigbutton.style.background = "linear-gradient(#525252, #52525200)";
     kgptconfigbutton.style.background = "transparent";
+    mistralconfigbutton.style.background = "transparent";
 });
 
 document.getElementsByClassName('life')[0].addEventListener('click', extpay_life.openPaymentPage);
@@ -387,15 +457,19 @@ settings.addEventListener("click", async function () {
 
     if (storekey.checked) {
         getAPIKey();
+        getMistralAPIKey();
     }
 
     getHighlight();
     getImport();
     getModel();
+    getMistralModel();
+    getProvider();
 
     await sleep(500);
 
     openaikeyinput.value = openAIKey;
+    mistralkeyinput.value = mistralKey;
 
     autohi.checked = autoHighlight;
     autoin.checked = autoImport;
@@ -405,6 +479,16 @@ settings.addEventListener("click", async function () {
     } else {
         models.selectedIndex = 1;
     }
+
+    if (mistralModel === "mistral-medium-latest") {
+        mistralmodels.selectedIndex = 1;
+    } else if (mistralModel === "mistral-large-latest") {
+        mistralmodels.selectedIndex = 2;
+    } else {
+        mistralmodels.selectedIndex = 0;
+    }
+
+    providerselect.value = provider;
 
     config.style.display = "block";
 
@@ -430,6 +514,14 @@ openaikeyinput.addEventListener("mouseout", function () {
     openaikeyinput.type = "password";
 });
 
+mistralkeyinput.addEventListener("mouseover", function () {
+    mistralkeyinput.type = "text";
+});
+
+mistralkeyinput.addEventListener("mouseout", function () {
+    mistralkeyinput.type = "password";
+});
+
 save.addEventListener("click", async function () {
     logDebug("Close settings - save changes");
 
@@ -444,6 +536,28 @@ save.addEventListener("click", async function () {
         }
     } else {
         openAIKey = openaikeyinput.value;
+    }
+
+    if (storekey.checked) {
+        if (mistralkeyinput.value != mistralKey) {
+            setMistralAPIKey(mistralkeyinput.value);
+            chrome.tabs.sendMessage(kahootId, { type: "setmistralkey", value: mistralkeyinput.value }, (result) => {
+                if (window.chrome.runtime.lastError) {
+                    logError("Error sending data - <i>you can ignore this</i>");
+                }
+            });
+        }
+    } else {
+        mistralKey = mistralkeyinput.value;
+    }
+
+    if (providerselect.value != provider) {
+        setProvider(providerselect.value);
+        chrome.tabs.sendMessage(kahootId, { type: "setprovider", value: providerselect.value }, (result) => {
+            if (window.chrome.runtime.lastError) {
+                logError("Error sending data - <i>you can ignore this</i>");
+            }
+        });
     }
 
 
@@ -468,6 +582,15 @@ save.addEventListener("click", async function () {
     if (models.options[models.selectedIndex].text != model) {
         setModel(models.options[models.selectedIndex].text);
         chrome.tabs.sendMessage(kahootId, { type: "setModel", value: models.options[models.selectedIndex].text.toString() }, (result) => {
+            if (window.chrome.runtime.lastError) {
+                logError("Error sending data - <i>you can ignore this</i>");
+            }
+        });
+    }
+
+    if (mistralmodels.options[mistralmodels.selectedIndex].text != mistralModel) {
+        setMistralModel(mistralmodels.options[mistralmodels.selectedIndex].text);
+        chrome.tabs.sendMessage(kahootId, { type: "setmistralmodel", value: mistralmodels.options[mistralmodels.selectedIndex].text.toString() }, (result) => {
             if (window.chrome.runtime.lastError) {
                 logError("Error sending data - <i>you can ignore this</i>");
             }
@@ -532,9 +655,12 @@ nopay.addEventListener("click", function () {
 });
 
 getAPIKey();
+getMistralAPIKey();
 getHighlight();
 getImport();
 getModel();
+getMistralModel();
+getProvider();
 
 const manifest = chrome.runtime.getManifest();
 console.log("Version: v" + manifest.version);
