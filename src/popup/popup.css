@@ -304,6 +304,45 @@ h4 {
     transition: 200ms;
 }
 
+.mistral-config-button {
+    background: transparent;
+    float: left;
+}
+
+.mistral-config {
+    transform: translateX(500px);
+    transition: 200ms;
+}
+
+.mistral {
+    margin-top: 5px;
+    margin-left: 20px;
+    float: left;
+    width: 260px;
+}
+
+.mistralkeyinput {
+    position: relative;
+    display: inline-block;
+    height: 32px;
+    background-color: #f5f5f5;
+    color: #242424;
+    border-radius: 5px;
+    padding: 5px;
+    outline: none;
+    border: none;
+    box-shadow: 0px 10px 20px -18px;
+    transition: 200ms;
+}
+
+.mistralkeyinput:focus {
+    border-bottom: 2px solid #9d86c3;
+}
+
+.mistralkeyinput:hover {
+    outline: 1px solid lightgrey;
+}
+
 .openai {
     margin-top: 5px;
     margin-left: 20px;
